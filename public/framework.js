@@ -24,28 +24,29 @@ function setupFramework(parentSettings){
         config: {
             name:parentSettings.name,
             settings: parentSettings.settings,
-            clientIds: parentSettings.clientIds,            
+            clientIds: parentSettings.clientIds,
             customInteractionAttributes: parentSettings.customInteractionAttributes,
         },
         initialSetup: function () {
             window.PureCloud.subscribe([
                 {
-                    type: 'Interaction', 
+                    type: 'Interaction',
                     callback: function (category, interaction) {
                         window.parent.postMessage(JSON.stringify({type:"interactionSubscription", data:{category:category, interaction:interaction}}) , parentDomain);
-                    }  
+                        console.log("adding event for CRM!!")
+                    }
                 },
                 {
-                    type: 'UserAction', 
+                    type: 'UserAction',
                     callback: function (category, data) {
                         window.parent.postMessage(JSON.stringify({type:"userActionSubscription", data:{category:category, data:data}}) , parentDomain);
-                    }  
+                    }
                 },
                 {
-                    type: 'Notification', 
+                    type: 'Notification',
                     callback: function (category, data) {
                         window.parent.postMessage(JSON.stringify({type:"notificationSubscription", data:{category:category, data:data}}) , parentDomain);
-                    }  
+                    }
                 }
             ]);
         },

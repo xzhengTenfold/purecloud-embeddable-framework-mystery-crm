@@ -3,11 +3,11 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Mystery Inc. CRM</title>
+    <title>StreamLine CRM</title>
     <meta name="description" content="">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="icon" href="/assets/favicon.ico">
-    
+
     {{content-for "head"}}
 
     <link integrity="" rel="stylesheet" href="{{rootURL}}assets/vendor.css">
@@ -20,7 +20,47 @@
 
     <script src="{{rootURL}}assets/vendor.js"></script>
     <script src="{{rootURL}}assets/mysteryCRM.js"></script>
-
     {{content-for "body-footer"}}
+
+  <script>
+    window.addEventListener("message", event => {
+      console.log("CRM Received: " ,event.data);
+      let message = JSON.parse(event.data);
+
+      if (message) {
+        if (message.type == 'settingsRequest') {
+          this.postSettings();
+        } else if (message.type == 'notificationSubscription' && message.data.category == "interactionWindow" && message.data.data.reason == 'focus') {
+          this.set('isDetailsWindowVisible', true);
+        } else if (message.type == 'processCallLog') {
+          if (message.data.callLog.id) {
+            this.get('activityService').updateActivity(message.data.callLog, message.data.interaction).then(() => {
+              this.postMessageToCTI({ type: 'processCallLogCompleted', interaction: message.data.interaction, callLogId: message.data.callLog.id });
+            });
+          } else {
+            this.get('activityService').logActivity(message.data.callLog, message.data.interaction).then(activity => {
+              this.postMessageToCTI({ type: 'processCallLogCompleted', interaction: message.data.interaction, callLogId: activity.id });
+            });
+          }
+        } else if (message.type == 'screenPop') {
+          this.set('isPhoneVisible', true);
+          if (message.data.interaction.attributes) {
+            let screenPopAttributes = this.get('ctiSettingsService.screenPopAttributes');
+            let attributeMapping = {};
+            screenPopAttributes.forEach(element => {
+              attributeMapping[element] = message.data.interaction.attributes[element];
+            });
+
+            if (attributeMapping.mystery_type == 'user') {
+              this.get('router').transitionTo('users.view', attributeMapping.mystery_id);
+            } else if (attributeMapping.mystery_type == 'issue') {
+              this.get('router').transitionTo('issues.view', attributeMapping.mystery_id);
+            }
+          }
+        }
+      }
+    });
+
+  </script>
   </body>
 </html>
